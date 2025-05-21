@@ -10,7 +10,6 @@ from typing import List
 def choose_letters() -> List[str]:
     """
     Return a list of four distinct uppercase letters.
-    Tries `wordfreq` first; otherwise uses a fixed default.
     """
     # Pull 50 000 common English words, filter for len==4 & distinct letters
     candidates = [
