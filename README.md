@@ -2,6 +2,30 @@
 
 # Genetic Algorithm 4x4 Puzzle Solver
 
+## Requirements
+
+### 1️⃣ Packages
+
+| Package       | Description                              |
+|-------------- |------------------------------------------|
+| Python ≥ 3.12 | Runtime                                  |
+| `wordfreq`    | Supplies a list of English words         |
+
+### 2️⃣  (Recommended) create a virtual environment
+
+```console
+python -m venv venv
+source venv/bin/activate
+```
+
+### 3️⃣  Install dependencies
+
+```console
+pip install --upgrade pip
+pip install wordfreq
+```
+
+
 ## Project Overview
 
 The objective is to design and implement a genetic algorithm that solves a 4x4 puzzle similar to Sudoku. Each row, column, and 2x2 subgrid must contain all four unique letters exactly once.
