@@ -42,7 +42,11 @@ def is_valid_solution(grid):
     return True
 
 
-def check_for_edge_word(grid, word):
+def check_for_edge_word(grid, word=None):
+    # If no word is provided, return True (no edge word check)
+    if not word:
+        return True
+
     # Construct strings for top, bottom, left, right edges
     top = "".join(grid[0])
     bottom = "".join(grid[3])
@@ -241,6 +245,7 @@ def main():
     print_grid(initial_grid)
 
     # GA parameters
+    # target_word = None
     target_word = "".join(letters)  # Optional goal for word on edge
     log(f"Target word: {target_word}")
 
