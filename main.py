@@ -109,13 +109,25 @@ def selection(population, fitness_scores):
 
 
 def fitness(grid, initial_grid):
+    """
+    Calculate fitness score of the grid.
+    Each rule violation adds the exact count of duplicates
+        (4 - unique).
+        This give the genetic algorithm a smoother gradient.
+    Lower score = better solution.
+    """
     score = 0
+
+    # Penalize duplicate letters in rows
+    for row in grid:
+        score += 4 - len(set(row))
 
     # Penalize duplicate letters in columns
     for col in range(4):  # Assuming a 4x4 grid
         column_letters = [grid[row][col] for row in range(4)]
-        if len(set(column_letters)) != 4:  # Check for unique letters
-            score += 1
+        score += 4 - len(set(column_letters))
+        # if len(set(column_letters)) != 4:  # Check for unique letters
+        #    score += 1
 
     # Penalize duplicate letters in 2x2 boxes
     for box_row in range(2):  # 2x2 boxes
@@ -126,8 +138,9 @@ def fitness(grid, initial_grid):
                     row = box_row * 2 + i
                     col = box_col * 2 + j
                     box_letters.append(grid[row][col])
-            if len(set(box_letters)) != 4:  # Check for unique letters
-                score += 1
+            score += 4 - len(set(box_letters))
+            # if len(set(box_letters)) != 4:  # Check for unique letters
+            #    score += 1
 
     # Large penalty if initial user-provided values are overwritten
     for i in range(4):
@@ -172,7 +185,7 @@ def initialize_population(size, letters, initial_grid):
 
 def main():
     # Define the distinct letters to use
-    # letters = ["W", "O", "R", "D"]
+    # letters = ["L", "O", "R", "D"]
     letters = choose_letters()
     print("Using letters:", letters)
     initial_grid = empty_grid(size=4)
@@ -184,7 +197,8 @@ def main():
     population_size = 1000
     max_generations = 500
     mutation_rate = 0.05
-    target_word = "WORD"  # Optional goal for word on edge
+    target_word = "".join(letters)  # Optional goal for word on edge
+    print("Target word:", target_word)
 
     # Generate initial population
     population = initialize_population(population_size, letters, initial_grid)
