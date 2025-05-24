@@ -1,5 +1,6 @@
 """
-4×4 Genetic-Algorithm 'Sudoku' Solver
+4×4 Genetic-Algorithm 'Sudoku' Solver Utility Functions
+This module provides utility functions for generating and manipulating a 4x4 grid
 """
 
 import random
@@ -7,14 +8,37 @@ from wordfreq import top_n_list
 from typing import List
 
 # Constants & Variables
-POPULATION_SIZE = 40
-MAX_GENERATIONS = 500
-TOURNAMENT_K = 3
-MUTATION_RATE = 0.15
+PRINT_CONSOLE = True  # False to suppress console spam
+WRITE_FILE = False  # False to avoid touching ga_run.log
+LOG_SUCCESS_ONLY = True  # True to log only successful runs
+LOGFILE = "ga_run.log"
+_run_buffer: list[str] = []
 Grid = List[List[str]]
 
 
 # Functions
+def log(msg: str, end: str = "\n"):
+    """
+    Print to console or append to the log file based on parameters.
+    """
+    if PRINT_CONSOLE:
+        print(msg, end=end)
+    _run_buffer.append(msg + end)
+
+
+def flush_log(success: bool):
+    """
+    Write the buffered lines to file if WRITE_FILE is True
+    and (success or not LOG_SUCCESS_ONLY).
+    Then clear the buffer for the next run.
+    """
+    global _run_buffer
+    if WRITE_FILE and (success or not LOG_SUCCESS_ONLY):
+        with open(LOGFILE, "a", encoding="utf-8") as f:
+            f.writelines(_run_buffer)
+    _run_buffer = []  # reset for next run
+
+
 def choose_letters() -> List[str]:
     """
     Return a list of four distinct uppercase letters.
@@ -81,10 +105,10 @@ def generate_starting_grid(
     return grid
 
 
-def print_grid(grid: Grid) -> None:
+def print_grid(grid):
     """
     Formatted grid for console view.
     """
     for row in grid:
-        print(" ".join(row))
-    print()
+        log(" ".join(row))
+    log("")

@@ -1,5 +1,20 @@
 import random
-from utils import empty_grid, generate_starting_grid
+import time
+import datetime
+from utils import (
+    empty_grid,
+    generate_starting_grid,
+    choose_letters,
+    log,
+    flush_log,
+    print_grid,
+)
+
+# Constants & Variables
+POPULATION_SIZE = 40
+MAX_GENERATIONS = 500
+TOURNAMENT_K = 3
+MUTATION_RATE = 0.15
 
 
 def is_valid_solution(grid):
@@ -27,18 +42,12 @@ def is_valid_solution(grid):
     return True
 
 
-def print_grid(grid):
-    for row in grid:
-        print(' '.join(row))
-    print()  # Print a newline for better readability
-
-
 def check_for_edge_word(grid, word):
     # Construct strings for top, bottom, left, right edges
-    top = ''.join(grid[0])
-    bottom = ''.join(grid[3])
-    left = ''.join(grid[i][0] for i in range(4))
-    right = ''.join(grid[i][3] for i in range(4))
+    top = "".join(grid[0])
+    bottom = "".join(grid[3])
+    left = "".join(grid[i][0] for i in range(4))
+    right = "".join(grid[i][3] for i in range(4))
 
     # Return true if any edge forms the target word
     if top == word or bottom == word or left == word or right == word:
@@ -61,7 +70,10 @@ def mutation(individual, initial_grid):
     col1, col2 = random.sample(mutable_positions, 2)
 
     # Swap the two positions
-    individual[row][col1], individual[row][col2] = individual[row][col2], individual[row][col1]
+    individual[row][col1], individual[row][col2] = (
+        individual[row][col2],
+        individual[row][col1],
+    )
 
     return individual
 
@@ -90,7 +102,7 @@ def crossover(parent1, parent2, initial_grid):
 def selection(population, fitness_scores):
     tournament_size = 3  # Size of the tournament
     best = None
-    best_score = float('inf')  # Start with a very high score
+    best_score = float("inf")  # Start with a very high score
 
     # Randomly choose individuals and pick the fittest among them
     for _ in range(tournament_size):
@@ -168,16 +180,22 @@ def initialize_population(size, letters, initial_grid):
 
 
 def main():
+    log(f"\n=== New run {datetime.datetime.now():%Y-%m-%d %H:%M:%S} ===")
     # Define the distinct letters to use
     letters = ["W", "O", "R", "D"]
+    # letters = ["R", "I", "S", "K"]
+    # letters = choose_letters()
     initial_grid = empty_grid(size=4)
     initial_grid = generate_starting_grid(grid=initial_grid, letters=letters, fixed=2)
+    log("Initial (valid, incomplete) grid:")
+    print_grid(initial_grid)
 
     # GA parameters
     population_size = 1000
     max_generations = 500
     mutation_rate = 0.05
-    target_word = "WORD"  # Optional goal for word on edge
+    target_word = "".join(letters)  # Optional goal for word on edge
+    log(f"Target word: {target_word}")
 
     # Generate initial population
     population = initialize_population(population_size, letters, initial_grid)
@@ -194,7 +212,9 @@ def main():
             if score == 0:
                 if check_for_edge_word(individual, target_word):
                     print_grid(individual)
-                    print(f"Solution found in generation {generation}")
+                    log(
+                        f"Solution found in generation {generation}, for letters {letters}."
+                    )
                     return
 
         new_population = []
@@ -213,7 +233,9 @@ def main():
 
         population = new_population
 
-    print(f"No solution found within {max_generations} generations.")
+    log(
+        f"No solution found within {max_generations} generations, for letters {letters}."
+    )
 
 
 # Call the main function to start the algorithm
