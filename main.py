@@ -48,23 +48,41 @@ def check_for_edge_word(grid, word):
 
 
 def mutation(individual, initial_grid):
-    # Randomly choose a row
-    row = random.randint(0, 3)
+    """
+    Hybrid mutation function that randomly does row swaps or column swaps.
+    50% Chance to swap two mutable cells in a random row
+    50% Chance to swap two mutable cells in a random column.
+    """
 
-    # Find mutable positions in the selected row
-    mutable_positions = [col for col in range(4) if initial_grid[row][col] == "_"]
+    def row_swap():
+        # Randomly choose a row
+        row = random.randint(0, 3)
+        # Find mutable positions in the selected row
+        mutable_positions = [col for col in range(4) if initial_grid[row][col] == "_"]
+        if len(mutable_positions) < 2:
+            col1, col2 = random.sample(mutable_positions, 2)
+            individual[row][col1], individual[row][col2] = (
+                individual[row][col2],
+                individual[row][col1],
+            )
 
-    if len(mutable_positions) < 2:
-        return individual  # No mutation if there are less than 2 mutable positions
+    def column_swap():
+        # Randomly choose a column
+        col = random.randint(0, 3)
+        # find mutable positions in the selected column
+        mutable_positions = [row for row in range(4) if initial_grid[row][col] == "_"]
+        if len(mutable_positions) >= 2:
+            row1, row2 = random.sample(mutable_positions, 2)
+            individual[row1][col], individual[row2][col] = (
+                individual[row2][col],
+                individual[row1][col],
+            )
 
-    # Pick two mutable positions in the row to swap
-    col1, col2 = random.sample(mutable_positions, 2)
-
-    # Swap the two positions
-    individual[row][col1], individual[row][col2] = (
-        individual[row][col2],
-        individual[row][col1],
-    )
+    # decide randomly whether to swap rows or columns
+    if random.random() < 0.5:
+        row_swap()
+    else:
+        column_swap()
 
     return individual
 
