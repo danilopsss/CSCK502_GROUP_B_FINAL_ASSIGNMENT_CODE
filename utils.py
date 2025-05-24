@@ -30,7 +30,7 @@ def choose_letters() -> List[str]:
 
 def empty_grid(size: int) -> Grid:
     """
-    4×4 grid filled with '.' placeholders.
+    4×4 grid filled with '_' placeholders.
     """
     return [["_" for _ in range(size)] for _ in range(size)]
 
@@ -54,10 +54,12 @@ def is_safe(grid: Grid, row: int, col: int, letter: str) -> bool:
     return True
 
 
-def generate_starting_grid(grid: list[list], letters: List[str], fixed: int = 5) -> Grid:
+def generate_starting_grid(
+    grid: list[list], letters: List[str], fixed: int = 5
+) -> Grid:
     """
     Place fixed letters randomly and preserve the constraint rules.
-    The rest of the cells remain '.' (blank).
+    The rest of the cells remain '_' (blank).
     """
     placed = 0
     attempts = 0
