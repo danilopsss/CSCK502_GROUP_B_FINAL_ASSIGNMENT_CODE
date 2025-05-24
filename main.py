@@ -33,7 +33,10 @@ def print_grid(grid):
     print()  # Print a newline for better readability
 
 
-def check_for_edge_word(grid, word):
+def check_for_edge_word(grid, word=None):
+    # If no word is provided, return True (no edge word check)
+    if not word:
+        return True
     # Construct strings for top, bottom, left, right edges
     top = "".join(grid[0])
     bottom = "".join(grid[3])
@@ -59,7 +62,7 @@ def mutation(individual, initial_grid):
         row = random.randint(0, 3)
         # Find mutable positions in the selected row
         mutable_positions = [col for col in range(4) if initial_grid[row][col] == "_"]
-        if len(mutable_positions) < 2:
+        if len(mutable_positions) >= 2:
             col1, col2 = random.sample(mutable_positions, 2)
             individual[row][col1], individual[row][col2] = (
                 individual[row][col2],
@@ -88,16 +91,23 @@ def mutation(individual, initial_grid):
 
 
 def crossover(parent1, parent2, initial_grid):
-    child = []
+    """
+    Hybrid crossover function
+    50% row-based one-point crossover
+    50% column-based one-point crossover.
+    """
 
-    # Mix rows from parents to create a child
-    for row_index in range(4):  # Assuming a 4x4 grid
-        if random.random() < 0.5:  # Randomly choose which parent to take the row from
-            child_row = parent1[row_index][:]
-        else:
-            child_row = parent2[row_index][:]
-
-        child.append(child_row)
+    # Decide which crossover method to use
+    if random.random() < 0.5:
+        # row-based crossover
+        cut = random.randint(1, 3)  # position 1..3
+        child = parent1[:cut] + parent2[cut:]
+    else:
+        # column-based crossover
+        cut = random.randint(1, 3)
+        child = []
+        for row_index in range(4):
+            child.append(parent1[row_index][:cut] + parent2[row_index][cut:])
 
     # Reinforce initial values so they're never changed
     for i in range(4):
@@ -203,19 +213,24 @@ def initialize_population(size, letters, initial_grid):
 
 def main():
     # Define the distinct letters to use
-    # letters = ["L", "O", "R", "D"]
-    letters = choose_letters()
+    letters = ["W", "O", "R", "D"]
+    # letters = choose_letters()
     print("Using letters:", letters)
     initial_grid = empty_grid(size=4)
     initial_grid = generate_starting_grid(grid=initial_grid, letters=letters, fixed=5)
+    # Patch the initial grid to guarantee that the target word is always placeable
+    for row, col in [(0, 0), (0, 3), (3, 0), (3, 3)]:
+        if initial_grid[row][col] != "_":
+            initial_grid[row][col] = "_"
     print("Initial (valid, incomplete) grid:")
     print_grid(initial_grid)
 
     # GA parameters
-    population_size = 1000
+    population_size = 40
     max_generations = 500
-    mutation_rate = 0.05
+    mutation_rate = 0.15
     target_word = "".join(letters)  # Optional goal for word on edge
+    # target_word = None
     print("Target word:", target_word)
 
     # Generate initial population
@@ -223,11 +238,14 @@ def main():
 
     for generation in range(1, max_generations + 1):
         fitness_scores = []
-
+        print(f"\nGeneration {generation}")
         # Evaluate fitness of each individual
         for individual in population:
             score = fitness(individual, initial_grid)
             fitness_scores.append(score)
+
+            flat = " ".join("".join(row) for row in individual)
+            print(f"{flat} fit={score}")
 
             # If a perfect solution is found
             if score == 0:
