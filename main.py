@@ -136,7 +136,33 @@ def selection(population, fitness_scores):
     return best
 
 
-def fitness(grid, initial_grid):
+def edge_penalty(grid, word):
+    """
+    Return 0 if the target word appears on any edge, else return
+    the *minimum* Hamming distance between the word and each edge.
+    """
+    top = "".join(grid[0])
+    bottom = "".join(grid[3])
+    left = "".join(r[0] for r in grid)
+    right = "".join(r[3] for r in grid)
+
+    # Word already present → no penalty
+    if word in (top, bottom, left, right):
+        return 0
+
+    # Compute how many letters differ for each edge
+    def hamming(a, b):
+        return sum(x != y for x, y in zip(a, b))
+
+    return min(
+        hamming(top, word),
+        hamming(bottom, word),
+        hamming(left, word),
+        hamming(right, word),
+    )
+
+
+def fitness(grid, initial_grid, target_word=None):
     """
     Calculate fitness score of the grid.
     Each rule violation adds the exact count of duplicates
@@ -176,6 +202,9 @@ def fitness(grid, initial_grid):
             if initial_grid[i][j] != "_" and grid[i][j] != initial_grid[i][j]:
                 score += 10000  # Large penalty
 
+    if target_word:
+        score += edge_penalty(grid, target_word)
+
     return score
 
 
@@ -214,6 +243,7 @@ def initialize_population(size, letters, initial_grid):
 def main():
     # Define the distinct letters to use
     letters = ["W", "O", "R", "D"]
+    # random.seed(42)
     # letters = choose_letters()
     print("Using letters:", letters)
     initial_grid = empty_grid(size=4)
@@ -241,7 +271,7 @@ def main():
         print(f"\nGeneration {generation}")
         # Evaluate fitness of each individual
         for individual in population:
-            score = fitness(individual, initial_grid)
+            score = fitness(individual, initial_grid, target_word)
             fitness_scores.append(score)
 
             flat = " ".join("".join(row) for row in individual)
