@@ -179,6 +179,56 @@ def initialize_population(size, letters, initial_grid):
     return population
 
 
+def run_ga(
+    pop_size: int,
+    mut_rate: float,
+    max_gens: int = 300,
+    fixed_clues: int = 5,
+    use_edge_word: bool = True,
+    letters: list[str] | None = None,
+    seed: int | None = None,
+) -> tuple[bool, int, float]:
+    """
+    Run GA once with the given parameters.
+    Returns (success, generations_used, elapsed_seconds).
+    """
+    if seed is not None:
+        random.seed(seed)
+
+    edge_word = "".join(letters) if use_edge_word else None
+    init_grid = empty_grid(4)
+    init_grid = generate_starting_grid(init_grid, letters, fixed_clues)
+    for r, c in [(0, 0), (0, 3), (3, 0), (3, 3)]:
+        init_grid[r][c] = "_"  # keep corners free
+
+    population = initialize_population(pop_size, letters, init_grid)
+    start_clock = time.perf_counter()
+
+    for gen in range(1, max_gens + 1):
+        fits = [fitness(ind, init_grid, edge_word) for ind in population]
+        best_idx = min(range(pop_size), key=fits.__getitem__)
+        best_fit = fits[best_idx]
+        elite = population[best_idx]
+
+        if best_fit == 0 and check_for_edge_word(elite, edge_word):
+            return True, gen, time.perf_counter() - start_clock
+
+        new_pop = []
+        while len(new_pop) < pop_size:
+            p1 = selection(population, fits)
+            p2 = selection(population, fits)
+            child = crossover(p1, p2, init_grid)
+            if random.random() < mut_rate:
+                child = mutation(child, init_grid)
+            new_pop.append(child)
+        new_pop.append(elite)
+        if len(new_pop) > pop_size:
+            new_pop.pop(random.randrange(len(new_pop)))
+        population = new_pop
+
+    return False, max_gens, time.perf_counter() - start_clock
+
+
 def main():
     log(f"\n=== New run {datetime.datetime.now():%Y-%m-%d %H:%M:%S} ===")
     # Define the distinct letters to use
