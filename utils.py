@@ -28,11 +28,11 @@ def choose_letters() -> List[str]:
     return list(random.choice(candidates))
 
 
-def empty_grid() -> Grid:
+def empty_grid(size: int) -> Grid:
     """
     4×4 grid filled with '.' placeholders.
     """
-    return [["." for _ in range(4)] for _ in range(4)]
+    return [["_" for _ in range(size)] for _ in range(size)]
 
 
 def is_safe(grid: Grid, row: int, col: int, letter: str) -> bool:
@@ -54,12 +54,11 @@ def is_safe(grid: Grid, row: int, col: int, letter: str) -> bool:
     return True
 
 
-def generate_starting_grid(letters: List[str], fixed: int = 5) -> Grid:
+def generate_starting_grid(grid: list[list], letters: List[str], fixed: int = 5) -> Grid:
     """
     Place fixed letters randomly and preserve the constraint rules.
     The rest of the cells remain '.' (blank).
     """
-    generated_grid = empty_grid()
     placed = 0
     attempts = 0
     # avoid infinite loops, arbitrary number (200).
@@ -67,17 +66,17 @@ def generate_starting_grid(letters: List[str], fixed: int = 5) -> Grid:
     # A limit of 200 should be sufficient to find a valid placement.
     while placed < fixed and attempts < 200:
         r, c = random.randint(0, 3), random.randint(0, 3)
-        if generated_grid[r][c] != ".":  # already filled
+        if grid[r][c] != "_":  # already filled
             attempts += 1
             continue
         letter = random.choice(letters)
-        if is_safe(generated_grid, r, c, letter):
-            generated_grid[r][c] = letter
+        if is_safe(grid, r, c, letter):
+            grid[r][c] = letter
             placed += 1
         attempts += 1
     if placed < fixed:
         raise RuntimeError("Could not generate a consistent starting grid.")
-    return generated_grid
+    return grid
 
 
 def print_grid(grid: Grid) -> None:
@@ -87,15 +86,3 @@ def print_grid(grid: Grid) -> None:
     for row in grid:
         print(" ".join(row))
     print()
-
-
-# Config
-LETTERS = choose_letters()
-
-# Main code
-# The partially completed grid is provided by the User.
-# In this case, for easier testing, the User is the machine itself that generates a random grid.
-print("Using letters:", LETTERS)
-starting_grid = generate_starting_grid(LETTERS, fixed=5)
-print("Initial (valid, incomplete) grid:")
-print_grid(starting_grid)
