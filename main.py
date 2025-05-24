@@ -256,7 +256,7 @@ def main():
     print_grid(initial_grid)
 
     # GA parameters
-    population_size = 40
+    population_size = 1000
     max_generations = 500
     mutation_rate = 0.15
     target_word = "".join(letters)  # Optional goal for word on edge
