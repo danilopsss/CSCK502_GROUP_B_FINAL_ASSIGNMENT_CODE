@@ -1,101 +1,228 @@
-"""
-4×4 Genetic-Algorithm 'Sudoku' Solver
-"""
-
 import random
-from wordfreq import top_n_list
-from typing import List
-
-# Constants & Variables
-POPULATION_SIZE = 40
-MAX_GENERATIONS = 500
-TOURNAMENT_K = 3
-MUTATION_RATE = 0.15
-Grid = List[List[str]]
+from utils import empty_grid, generate_starting_grid, choose_letters
 
 
-# Functions
-def choose_letters() -> List[str]:
-    """
-    Return a list of four distinct uppercase letters.
-    """
-    # Pull 50 000 common English words, filter for len==4 & distinct letters
-    candidates = [
-        w.upper() for w in top_n_list("en", 50_000) if len(w) == 4 and len(set(w)) == 4
-    ]
-    if not candidates:
-        raise ValueError("No 4-letter candidate words found.")
-    return list(random.choice(candidates))
+def is_valid_solution(grid):
+    # Check all rows for uniqueness
+    for row in grid:
+        if len(set(row)) != 4:  # Check if all letters are unique
+            return False
 
+    # Check all columns for uniqueness
+    for col in range(4):
+        column = [grid[row][col] for row in range(4)]
+        if len(set(column)) != 4:  # Check if all letters are unique
+            return False
 
-def empty_grid() -> Grid:
-    """
-    4×4 grid filled with '.' placeholders.
-    """
-    return [["." for _ in range(4)] for _ in range(4)]
-
-
-def is_safe(grid: Grid, row: int, col: int, letter: str) -> bool:
-    """
-    Return True if `letter` can be placed at (row, col) without conflicts.
-    """
-    # Row
-    if letter in grid[row]:
-        return False
-    # Column
-    if letter in (grid[r][col] for r in range(4)):
-        return False
-    # 2×2 block
-    br, bc = (row // 2) * 2, (col // 2) * 2  # block’s top-left cell
-    for r in range(br, br + 2):
-        for c in range(bc, bc + 2):
-            if grid[r][c] == letter:
+    # Check all 2x2 subgrids for uniqueness
+    for box_row in range(2):
+        for box_col in range(2):
+            box = []
+            for i in range(2):
+                for j in range(2):
+                    box.append(grid[box_row * 2 + i][box_col * 2 + j])
+            if len(set(box)) != 4:  # Check if all letters are unique
                 return False
+
     return True
 
 
-def generate_starting_grid(letters: List[str], fixed: int = 5) -> Grid:
-    """
-    Place fixed letters randomly and preserve the constraint rules.
-    The rest of the cells remain '.' (blank).
-    """
-    generated_grid = empty_grid()
-    placed = 0
-    attempts = 0
-    # avoid infinite loops, arbitrary number (200).
-    # A 4 × 4 board has only 16 cells. Even trying to place 5 fixed letters, there are at most 16 × 4 = 64 cell/letter combinations.
-    # A limit of 200 should be sufficient to find a valid placement.
-    while placed < fixed and attempts < 200:
-        r, c = random.randint(0, 3), random.randint(0, 3)
-        if generated_grid[r][c] != ".":  # already filled
-            attempts += 1
-            continue
-        letter = random.choice(letters)
-        if is_safe(generated_grid, r, c, letter):
-            generated_grid[r][c] = letter
-            placed += 1
-        attempts += 1
-    if placed < fixed:
-        raise RuntimeError("Could not generate a consistent starting grid.")
-    return generated_grid
-
-
-def print_grid(grid: Grid) -> None:
-    """
-    Formatted grid for console view.
-    """
+def print_grid(grid):
     for row in grid:
         print(" ".join(row))
-    print()
+    print()  # Print a newline for better readability
 
 
-# Config
-LETTERS = choose_letters()
+def check_for_edge_word(grid, word):
+    # Construct strings for top, bottom, left, right edges
+    top = "".join(grid[0])
+    bottom = "".join(grid[3])
+    left = "".join(grid[i][0] for i in range(4))
+    right = "".join(grid[i][3] for i in range(4))
 
-# Main code
-# The partially completed grid is provided by the User.
-# In this case, for easier testing, the User is the machine itself that generates a random grid.
-print("Using letters:", LETTERS)
-starting_grid = generate_starting_grid(LETTERS, fixed=5)
-print("Initial (valid, incomplete) grid:")
-print_grid(starting_grid)
+    # Return true if any edge forms the target word
+    if top == word or bottom == word or left == word or right == word:
+        return True
+    else:
+        return False
+
+
+def mutation(individual, initial_grid):
+    # Randomly choose a row
+    row = random.randint(0, 3)
+
+    # Find mutable positions in the selected row
+    mutable_positions = [col for col in range(4) if initial_grid[row][col] == "_"]
+
+    if len(mutable_positions) < 2:
+        return individual  # No mutation if there are less than 2 mutable positions
+
+    # Pick two mutable positions in the row to swap
+    col1, col2 = random.sample(mutable_positions, 2)
+
+    # Swap the two positions
+    individual[row][col1], individual[row][col2] = (
+        individual[row][col2],
+        individual[row][col1],
+    )
+
+    return individual
+
+
+def crossover(parent1, parent2, initial_grid):
+    child = []
+
+    # Mix rows from parents to create a child
+    for row_index in range(4):  # Assuming a 4x4 grid
+        if random.random() < 0.5:  # Randomly choose which parent to take the row from
+            child_row = parent1[row_index][:]
+        else:
+            child_row = parent2[row_index][:]
+
+        child.append(child_row)
+
+    # Reinforce initial values so they're never changed
+    for i in range(4):
+        for j in range(4):
+            if initial_grid[i][j] != "_":
+                child[i][j] = initial_grid[i][j]
+
+    return child
+
+
+def selection(population, fitness_scores):
+    tournament_size = 3  # Size of the tournament
+    best = None
+    best_score = float("inf")  # Start with a very high score
+
+    # Randomly choose individuals and pick the fittest among them
+    for _ in range(tournament_size):
+        idx = random.randint(0, len(population) - 1)  # Random index
+        candidate = population[idx]
+        candidate_score = fitness_scores[idx]
+
+        if candidate_score < best_score:  # Check if this candidate is better
+            best = candidate
+            best_score = candidate_score
+
+    return best
+
+
+def fitness(grid, initial_grid):
+    score = 0
+
+    # Penalize duplicate letters in columns
+    for col in range(4):  # Assuming a 4x4 grid
+        column_letters = [grid[row][col] for row in range(4)]
+        if len(set(column_letters)) != 4:  # Check for unique letters
+            score += 1
+
+    # Penalize duplicate letters in 2x2 boxes
+    for box_row in range(2):  # 2x2 boxes
+        for box_col in range(2):
+            box_letters = []
+            for i in range(2):
+                for j in range(2):
+                    row = box_row * 2 + i
+                    col = box_col * 2 + j
+                    box_letters.append(grid[row][col])
+            if len(set(box_letters)) != 4:  # Check for unique letters
+                score += 1
+
+    # Large penalty if initial user-provided values are overwritten
+    for i in range(4):
+        for j in range(4):
+            if initial_grid[i][j] != "_" and grid[i][j] != initial_grid[i][j]:
+                score += 10000  # Large penalty
+
+    return score
+
+
+def initialize_population(size, letters, initial_grid):
+    population = []
+
+    for _ in range(size):
+        individual = []
+
+        for row_index in range(4):  # Assuming a 4x4 grid
+            row = initial_grid[row_index][:]  # Copy the initial row
+            empty_positions = []
+
+            # Collect positions that are still empty
+            for col in range(4):
+                if row[col] == "_":
+                    empty_positions.append(col)
+
+            # Track which letters are already placed
+            fixed_letters = [row[col] for col in range(4) if row[col] != "_"]
+
+            # Fill remaining positions with a random permutation of unused letters
+            remaining_letters = list(set(letters) - set(fixed_letters))
+            random.shuffle(remaining_letters)
+
+            for pos in empty_positions:
+                row[pos] = remaining_letters.pop(0)  # Fill with remaining letters
+
+            individual.append(row)
+
+        population.append(individual)
+
+    return population
+
+
+def main():
+    # Define the distinct letters to use
+    # letters = ["W", "O", "R", "D"]
+    letters = choose_letters()
+    print("Using letters:", letters)
+    initial_grid = empty_grid(size=4)
+    initial_grid = generate_starting_grid(grid=initial_grid, letters=letters, fixed=5)
+    print("Initial (valid, incomplete) grid:")
+    print_grid(initial_grid)
+
+    # GA parameters
+    population_size = 1000
+    max_generations = 500
+    mutation_rate = 0.05
+    target_word = "WORD"  # Optional goal for word on edge
+
+    # Generate initial population
+    population = initialize_population(population_size, letters, initial_grid)
+
+    for generation in range(1, max_generations + 1):
+        fitness_scores = []
+
+        # Evaluate fitness of each individual
+        for individual in population:
+            score = fitness(individual, initial_grid)
+            fitness_scores.append(score)
+
+            # If a perfect solution is found
+            if score == 0:
+                if check_for_edge_word(individual, target_word):
+                    print_grid(individual)
+                    print(f"Solution found in generation {generation}")
+                    return
+
+        new_population = []
+
+        # Create next generation using selection, crossover, mutation
+        while len(new_population) < population_size:
+            parent1 = selection(population, fitness_scores)
+            parent2 = selection(population, fitness_scores)
+
+            child = crossover(parent1, parent2, initial_grid)
+
+            if random.random() < mutation_rate:
+                child = mutation(child, initial_grid)
+
+            new_population.append(child)
+
+        population = new_population
+
+    print(f"No solution found within {max_generations} generations.")
+
+
+# Call the main function to start the algorithm
+if __name__ == "__main__":
+    main()
