@@ -11,7 +11,7 @@ from utils import (
 )
 
 # Constants & Variables
-POPULATION_SIZE = 40
+POPULATION_SIZE = 1000
 MAX_GENERATIONS = 500
 TOURNAMENT_K = 3
 MUTATION_RATE = 0.15
@@ -205,7 +205,7 @@ def run_ga(
     start_clock = time.perf_counter()
 
     for gen in range(1, max_gens + 1):
-        fits = [fitness(ind, init_grid, edge_word) for ind in population]
+        fits = [fitness(ind, init_grid) for ind in population]
         best_idx = min(range(pop_size), key=fits.__getitem__)
         best_fit = fits[best_idx]
         elite = population[best_idx]
@@ -241,16 +241,13 @@ def main():
     print_grid(initial_grid)
 
     # GA parameters
-    population_size = 1000
-    max_generations = 500
-    mutation_rate = 0.05
     target_word = "".join(letters)  # Optional goal for word on edge
     log(f"Target word: {target_word}")
 
     # Generate initial population
-    population = initialize_population(population_size, letters, initial_grid)
+    population = initialize_population(POPULATION_SIZE, letters, initial_grid)
 
-    for generation in range(1, max_generations + 1):
+    for generation in range(1, MAX_GENERATIONS + 1):
         fitness_scores = []
         log(f"\nGeneration {generation}")
 
@@ -274,13 +271,13 @@ def main():
         new_population = []
 
         # Create next generation using selection, crossover, mutation
-        while len(new_population) < population_size:
+        while len(new_population) < POPULATION_SIZE:
             parent1 = selection(population, fitness_scores)
             parent2 = selection(population, fitness_scores)
 
             child = crossover(parent1, parent2, initial_grid)
 
-            if random.random() < mutation_rate:
+            if random.random() < MUTATION_RATE:
                 child = mutation(child, initial_grid)
 
             new_population.append(child)
@@ -288,7 +285,7 @@ def main():
         population = new_population
 
     log(
-        f"No solution found within {max_generations} generations, for letters {letters}."
+        f"No solution found within {MAX_GENERATIONS} generations, for letters {letters}."
     )
 
 
