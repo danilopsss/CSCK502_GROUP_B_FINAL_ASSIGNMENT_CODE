@@ -202,11 +202,15 @@ def main():
 
     for generation in range(1, max_generations + 1):
         fitness_scores = []
+        log(f"\nGeneration {generation}")
 
         # Evaluate fitness of each individual
         for individual in population:
             score = fitness(individual, initial_grid)
             fitness_scores.append(score)
+
+            flat = " ".join("".join(row) for row in individual)
+            log(f"{flat} fit={score}")
 
             # If a perfect solution is found
             if score == 0:
