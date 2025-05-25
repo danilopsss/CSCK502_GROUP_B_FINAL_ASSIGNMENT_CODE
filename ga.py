@@ -1,5 +1,20 @@
 import random
-from utils import empty_grid, generate_starting_grid
+import time
+import datetime
+from utils import (
+    empty_grid,
+    generate_starting_grid,
+    choose_letters,
+    log,
+    flush_log,
+    print_grid,
+)
+
+# Constants & Variables
+POPULATION_SIZE = 1000
+MAX_GENERATIONS = 500
+TOURNAMENT_K = 3
+MUTATION_RATE = 0.15
 
 
 def is_valid_solution(grid):
@@ -27,18 +42,16 @@ def is_valid_solution(grid):
     return True
 
 
-def print_grid(grid):
-    for row in grid:
-        print(' '.join(row))
-    print()  # Print a newline for better readability
+def check_for_edge_word(grid, word=None):
+    # If no word is provided, return True (no edge word check)
+    if not word:
+        return True
 
-
-def check_for_edge_word(grid, word):
     # Construct strings for top, bottom, left, right edges
-    top = ''.join(grid[0])
-    bottom = ''.join(grid[3])
-    left = ''.join(grid[i][0] for i in range(4))
-    right = ''.join(grid[i][3] for i in range(4))
+    top = "".join(grid[0])
+    bottom = "".join(grid[3])
+    left = "".join(grid[i][0] for i in range(4))
+    right = "".join(grid[i][3] for i in range(4))
 
     # Return true if any edge forms the target word
     if top == word or bottom == word or left == word or right == word:
@@ -61,7 +74,10 @@ def mutation(individual, initial_grid):
     col1, col2 = random.sample(mutable_positions, 2)
 
     # Swap the two positions
-    individual[row][col1], individual[row][col2] = individual[row][col2], individual[row][col1]
+    individual[row][col1], individual[row][col2] = (
+        individual[row][col2],
+        individual[row][col1],
+    )
 
     return individual
 
@@ -88,12 +104,11 @@ def crossover(parent1, parent2, initial_grid):
 
 
 def selection(population, fitness_scores):
-    tournament_size = 3  # Size of the tournament
     best = None
-    best_score = float('inf')  # Start with a very high score
+    best_score = float("inf")  # Start with a very high score
 
     # Randomly choose individuals and pick the fittest among them
-    for _ in range(tournament_size):
+    for _ in range(TOURNAMENT_K):
         idx = random.randint(0, len(population) - 1)  # Random index
         candidate = population[idx]
         candidate_score = fitness_scores[idx]
@@ -167,53 +182,115 @@ def initialize_population(size, letters, initial_grid):
     return population
 
 
+def run_ga(
+    pop_size: int,
+    mut_rate: float,
+    max_gens: int = 300,
+    fixed_clues: int = 5,
+    use_edge_word: bool = True,
+    letters: list[str] | None = None,
+    seed: int | None = None,
+) -> tuple[bool, int, float]:
+    """
+    Run GA once with the given parameters.
+    Returns (success, generations_used, elapsed_seconds).
+    """
+    if seed is not None:
+        random.seed(seed)
+
+    edge_word = "".join(letters) if use_edge_word else None
+    init_grid = empty_grid(4)
+    init_grid = generate_starting_grid(init_grid, letters, fixed_clues)
+    for r, c in [(0, 0), (0, 3), (3, 0), (3, 3)]:
+        init_grid[r][c] = "_"  # keep corners free
+
+    population = initialize_population(pop_size, letters, init_grid)
+    start_clock = time.perf_counter()
+
+    for gen in range(1, max_gens + 1):
+        fits = [fitness(ind, init_grid) for ind in population]
+        best_idx = min(range(pop_size), key=fits.__getitem__)
+        best_fit = fits[best_idx]
+        elite = population[best_idx]
+
+        if best_fit == 0 and check_for_edge_word(elite, edge_word):
+            return True, gen, time.perf_counter() - start_clock
+
+        new_pop = []
+        while len(new_pop) < pop_size:
+            p1 = selection(population, fits)
+            p2 = selection(population, fits)
+            child = crossover(p1, p2, init_grid)
+            if random.random() < mut_rate:
+                child = mutation(child, init_grid)
+            new_pop.append(child)
+        new_pop.append(elite)
+        if len(new_pop) > pop_size:
+            new_pop.pop(random.randrange(len(new_pop)))
+        population = new_pop
+
+    return False, max_gens, time.perf_counter() - start_clock
+
+
 def main():
+    log(f"\n=== New run {datetime.datetime.now():%Y-%m-%d %H:%M:%S} ===")
     # Define the distinct letters to use
     letters = ["W", "O", "R", "D"]
+    # letters = ["R", "I", "S", "K"]
+    # letters = choose_letters()
     initial_grid = empty_grid(size=4)
     initial_grid = generate_starting_grid(grid=initial_grid, letters=letters, fixed=2)
+    log("Initial (valid, incomplete) grid:")
+    print_grid(initial_grid)
 
     # GA parameters
-    population_size = 1000
-    max_generations = 500
-    mutation_rate = 0.05
-    target_word = "WORD"  # Optional goal for word on edge
+    # target_word = None
+    target_word = "".join(letters)  # Optional goal for word on edge
+    log(f"Target word: {target_word}")
 
     # Generate initial population
-    population = initialize_population(population_size, letters, initial_grid)
+    population = initialize_population(POPULATION_SIZE, letters, initial_grid)
 
-    for generation in range(1, max_generations + 1):
+    for generation in range(1, MAX_GENERATIONS + 1):
         fitness_scores = []
+        log(f"\nGeneration {generation}")
 
         # Evaluate fitness of each individual
         for individual in population:
             score = fitness(individual, initial_grid)
             fitness_scores.append(score)
 
+            flat = " ".join("".join(row) for row in individual)
+            log(f"{flat} fit={score}")
+
             # If a perfect solution is found
             if score == 0:
                 if check_for_edge_word(individual, target_word):
                     print_grid(individual)
-                    print(f"Solution found in generation {generation}")
+                    log(
+                        f"Solution found in generation {generation}, for letters {letters}."
+                    )
                     return
 
         new_population = []
 
         # Create next generation using selection, crossover, mutation
-        while len(new_population) < population_size:
+        while len(new_population) < POPULATION_SIZE:
             parent1 = selection(population, fitness_scores)
             parent2 = selection(population, fitness_scores)
 
             child = crossover(parent1, parent2, initial_grid)
 
-            if random.random() < mutation_rate:
+            if random.random() < MUTATION_RATE:
                 child = mutation(child, initial_grid)
 
             new_population.append(child)
 
         population = new_population
 
-    print(f"No solution found within {max_generations} generations.")
+    log(
+        f"No solution found within {MAX_GENERATIONS} generations, for letters {letters}."
+    )
 
 
 # Call the main function to start the algorithm
