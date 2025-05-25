@@ -104,12 +104,11 @@ def crossover(parent1, parent2, initial_grid):
 
 
 def selection(population, fitness_scores):
-    tournament_size = 3  # Size of the tournament
     best = None
     best_score = float("inf")  # Start with a very high score
 
     # Randomly choose individuals and pick the fittest among them
-    for _ in range(tournament_size):
+    for _ in range(TOURNAMENT_K):
         idx = random.randint(0, len(population) - 1)  # Random index
         candidate = population[idx]
         candidate_score = fitness_scores[idx]
