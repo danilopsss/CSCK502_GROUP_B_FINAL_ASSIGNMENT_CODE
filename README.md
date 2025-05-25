@@ -10,6 +10,7 @@
 |-------------- |------------------------------------------|
 | Python ≥ 3.12 | Runtime                                  |
 | `wordfreq`    | Supplies a list of English words         |
+| `tabulate`    | Pretty-print tabular data in Python      |
 
 ### 2️⃣  (Recommended) create a virtual environment
 
@@ -23,6 +24,7 @@ source venv/bin/activate
 ```console
 pip install --upgrade pip
 pip install wordfreq
+pip install tabulate
 ```
 
 
