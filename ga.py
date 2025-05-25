@@ -235,11 +235,12 @@ def run_ga(
 def main():
     log(f"\n=== New run {datetime.datetime.now():%Y-%m-%d %H:%M:%S} ===")
     # Define the distinct letters to use
-    letters = ["W", "O", "R", "D"]
+    # letters = ["W", "O", "R", "D"]
     # letters = ["R", "I", "S", "K"]
-    # letters = choose_letters()
+    letters = choose_letters()
     initial_grid = empty_grid(size=4)
     initial_grid = generate_starting_grid(grid=initial_grid, letters=letters, fixed=2)
+    log(f"Letters used: {letters}")
     log("Initial (valid, incomplete) grid:")
     print_grid(initial_grid)
 
@@ -270,6 +271,7 @@ def main():
                     log(
                         f"Solution found in generation {generation}, for letters {letters}."
                     )
+                    flush_log(success=True)
                     return
 
         new_population = []
@@ -291,6 +293,7 @@ def main():
     log(
         f"No solution found within {MAX_GENERATIONS} generations, for letters {letters}."
     )
+    flush_log(success=False)
 
 
 # Call the main function to start the algorithm
