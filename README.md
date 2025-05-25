@@ -47,6 +47,18 @@ or
 uv run ga.py
 ```
 
+## Log files
+
+The log files (.log) contain each the results of 10 executions of the ga.py program.
+The following table explains the differences between the files:
+
+| Log file                      | Description                                         |
+|-------------------------------|-----------------------------------------------------|
+| ga_run_RISK.log               | 10 runs of word 'RISK' and as a target word.        |
+| ga_run_WORD.log               | 10 runs of word 'WORD' and as a target word.        |
+| ga_run_notarget.log           | 10 runs of random words with no target word.        |
+| ga_run_target.log             | 10 runs of random words with each its target word.  |
+| ga_run_successes_random.log   | 10 runs of random words success runs <br>with the word as the target.                 |
 
 ## Project Overview
 
