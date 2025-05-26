@@ -9,8 +9,8 @@ from typing import List
 
 # Constants & Variables
 PRINT_CONSOLE = True  # False to suppress console spam
-WRITE_FILE = False  # False to avoid touching ga_run.log
-LOG_SUCCESS_ONLY = True  # True to log only successful runs
+WRITE_FILE = True  # False to avoid touching ga_run.log
+LOG_SUCCESS_ONLY = False  # True to log only successful runs
 LOGFILE = "ga_run.log"
 _run_buffer: list[str] = []
 Grid = List[List[str]]
